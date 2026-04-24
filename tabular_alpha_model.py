@@ -18,12 +18,10 @@ class TabularAlphaDecayModel:
         self.feature_names = None
 
     def fit(self, features: pd.DataFrame, target: pd.Series):
-        # features index is date
         X = features.drop(columns=['ticker'])
         y = target
-        self.feature_names = X.columns.tolist()
+        self.feature_names = X.columns.tolist()   # save feature names
 
-        # Train LightGBM regression
         dataset = lgb.Dataset(X, label=y)
         self.model = lgb.train(self.lgb_params, dataset, num_boost_round=200)
 
@@ -32,7 +30,6 @@ class TabularAlphaDecayModel:
         df = features[['ticker']].copy()
         df['pred'] = preds
         df['target'] = y.values
-        # No need to add 'date' column — index is already date
 
         self._estimate_decay(df)
         return True
@@ -42,7 +39,7 @@ class TabularAlphaDecayModel:
         for lag in range(1, self.decay_max_lag + 1):
             corrs = []
             for ticker in df['ticker'].unique():
-                sub = df[df['ticker'] == ticker].sort_index()  # <-- use index (date)
+                sub = df[df['ticker'] == ticker].sort_index()
                 if len(sub) < lag + config.DECAY_MIN_SAMPLES:
                     continue
                 corr = sub['pred'].iloc[:-lag].corr(sub['target'].iloc[lag:])
@@ -78,7 +75,8 @@ class TabularAlphaDecayModel:
         self.decay_factor = np.exp(-np.log(2) / self.half_life)
 
     def predict(self, features: pd.DataFrame) -> pd.Series:
-        X = features.drop(columns=['ticker'])
+        # Use exactly the columns the model was trained on
+        X = features[self.feature_names]
         preds = self.model.predict(X)
         return pd.Series(preds, index=features.index)
 
