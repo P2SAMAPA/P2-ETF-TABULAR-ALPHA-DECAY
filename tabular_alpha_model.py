@@ -18,10 +18,12 @@ class TabularAlphaDecayModel:
         self.feature_names = None
 
     def fit(self, features: pd.DataFrame, target: pd.Series):
+        # features index is date
         X = features.drop(columns=['ticker'])
         y = target
-        self.feature_names = X.columns.tolist()   # save feature names
+        self.feature_names = X.columns.tolist()
 
+        # Train LightGBM regression
         dataset = lgb.Dataset(X, label=y)
         self.model = lgb.train(self.lgb_params, dataset, num_boost_round=200)
 
@@ -50,7 +52,8 @@ class TabularAlphaDecayModel:
             else:
                 break
 
-        if len(all_corrs) < 2:
+        # If signal is too weak or insufficient data, use default half-life
+        if len(all_corrs) < 2 or abs(all_corrs[0][1]) < 0.005:
             self.half_life = 5.0
             self.decay_factor = np.exp(-np.log(2) / self.half_life)
             return
@@ -72,6 +75,8 @@ class TabularAlphaDecayModel:
         except Exception:
             self.half_life = 5.0
 
+        # Clamp to a realistic range (1 day – 21 days)
+        self.half_life = float(np.clip(self.half_life, 1.0, 21.0))
         self.decay_factor = np.exp(-np.log(2) / self.half_life)
 
     def predict(self, features: pd.DataFrame) -> pd.Series:
