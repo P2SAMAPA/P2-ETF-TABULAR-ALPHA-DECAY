@@ -46,7 +46,7 @@ def build_features(returns: pd.DataFrame, macro: pd.DataFrame) -> pd.DataFrame:
     """
     Build feature matrix: lagged returns (1,5,21 days) and current macro values.
     Target: next-day return. Returns a single long-format DataFrame with
-    columns: date, ticker, features..., target
+    date as index and columns: ticker, features..., target
     """
     common_idx = returns.index.intersection(macro.index)
     returns = returns.loc[common_idx]
@@ -68,8 +68,10 @@ def build_features(returns: pd.DataFrame, macro: pd.DataFrame) -> pd.DataFrame:
             df[col] = macro[col].reindex(ret.index).ffill()
 
         df['ticker'] = ticker
+        df['date'] = df.index  # store date as column temporarily
         df = df.dropna()
         feature_frames.append(df)
 
     full = pd.concat(feature_frames, ignore_index=True)
+    full = full.set_index('date')  # <-- set date as index
     return full
