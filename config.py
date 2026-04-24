@@ -28,10 +28,10 @@ UNIVERSES = {
 # --- Macro Features ---
 MACRO_COLS = ["VIX", "DXY", "T10Y2Y", "TBILL_3M"]
 
-# --- LightGBM Parameters ---
+# --- LightGBM Parameters (regression, not ranking) ---
 LGB_PARAMS = {
-    "objective": "lambdarank",
-    "metric": "ndcg",
+    "objective": "regression",          # continuous target
+    "metric": "rmse",
     "boosting_type": "gbdt",
     "num_leaves": 31,
     "learning_rate": 0.05,
@@ -40,12 +40,11 @@ LGB_PARAMS = {
     "bagging_freq": 5,
     "verbose": -1,
     "random_state": 42,
-    "ndcg_eval_at": [1, 3, 5],
 }
 
 # --- Decay Estimation ---
-DECAY_MAX_LAG = 21                    # Maximum lag (days) for decay estimation
-DECAY_MIN_SAMPLES = 100               # Minimum common samples per lag
+DECAY_MAX_LAG = 21
+DECAY_MIN_SAMPLES = 100
 
 # --- Training ---
 TRAIN_START = "2008-01-01"
