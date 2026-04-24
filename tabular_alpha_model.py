@@ -1,5 +1,5 @@
 """
-Tabular Alpha + Alpha Decay model using LightGBM and auto‑correlation decay.
+Tabular Alpha + Alpha Decay model using LightGBM regression.
 """
 
 import numpy as np
@@ -18,27 +18,22 @@ class TabularAlphaDecayModel:
         self.feature_names = None
 
     def fit(self, features: pd.DataFrame, target: pd.Series):
-        # Ensure index is date for grouping
-        df = features.copy()
-        df['target'] = target
-        df['date'] = features.index  # date index
-        
-        # Sort by date for correct group boundaries
-        df = df.sort_values(['date', 'ticker'])
-        
-        # Compute group sizes (number of ETFs per date)
-        group_sizes = df.groupby('date').size().to_numpy()
-        
-        # Prepare LightGBM dataset with group information
-        X = df.drop(columns=['ticker', 'target', 'date'])
-        y = df['target']
-        
-        dataset = lgb.Dataset(X, label=y, group=group_sizes)
-        self.model = lgb.train(self.lgb_params, dataset, num_boost_round=200)
+        # features index is date, but we don't need grouping for regression
+        X = features.drop(columns=['ticker'])
+        y = target
         self.feature_names = X.columns.tolist()
-        
+
+        # Train LightGBM regression
+        dataset = lgb.Dataset(X, label=y)
+        self.model = lgb.train(self.lgb_params, dataset, num_boost_round=200)
+
         # Predict for decay estimation
-        df['pred'] = self.model.predict(X)
+        preds = self.model.predict(X)
+        df = features[['ticker']].copy()
+        df['pred'] = preds
+        df['target'] = y.values
+        df['date'] = features.index
+
         self._estimate_decay(df)
         return True
 
