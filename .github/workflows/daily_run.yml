@@ -2,7 +2,7 @@ name: Daily Tabular Alpha Decay Run
 
 on:
   schedule:
-    - cron: '0 12 * * 1-5'
+    - cron: '0 04 * * 1-5'
   workflow_dispatch:
 
 jobs:
